@@ -1,0 +1,66 @@
+services:
+  # ── Ollama: local LLM server ─────────────────────────────────
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ai-mlops-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+
+  # ── PostgreSQL: required by LangFuse ────────────────────────
+  langfuse-db:
+    image: postgres:16-alpine
+    container_name: ai-mlops-langfuse-db
+    environment:
+      POSTGRES_USER: langfuse
+      POSTGRES_PASSWORD: langfuse
+      POSTGRES_DB: langfuse
+    volumes:
+      - langfuse_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U langfuse" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ── LangFuse: LLM observability UI (v2 — no ClickHouse required) ──
+  langfuse:
+    image: langfuse/langfuse:2.95.11
+    container_name: ai-mlops-langfuse
+    depends_on:
+      langfuse-db:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://langfuse:langfuse@langfuse-db:5432/langfuse
+      NEXTAUTH_SECRET: local-dev-secret-changeme
+      SALT: local-dev-salt-changeme
+      NEXTAUTH_URL: http://localhost:3000
+      TELEMETRY_ENABLED: "false"
+    restart: unless-stopped
+
+  # ── Agent API: FastAPI serving ───────────────────────────────
+  agent-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ai-mlops-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./.env:/app/.env
+    environment:
+      OLLAMA_BASE_URL: http://ollama:11434
+      LANGFUSE_HOST: http://langfuse:3000
+    depends_on:
+      - ollama
+      - langfuse
+    restart: unless-stopped
+
+volumes:
+  ollama_data:
+  langfuse_db_data:

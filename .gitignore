@@ -1,0 +1,29 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.DS_Store
+
+# DVC — track the .dvc files, not the data itself
+data/raw/*
+data/processed/*
+data/embeddings/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/embeddings/.gitkeep
+
+# MLflow (if used alongside)
+mlruns/
+
+# Node / React
+ui/node_modules/
+ui/dist/
+ui/.env
+
+# Fine-tune checkpoints
+src/training/checkpoints/
+*.gguf

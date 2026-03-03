@@ -1,0 +1,76 @@
+# Promptfoo configuration for prompt version comparison
+# Compare multiple prompt strategies against the same questions
+# Run with: promptfoo eval --config tests/promptfoo.yml
+
+description: "AI MLOps Local — Agent Prompt Evaluation"
+
+# ── Prompts: compare different framing styles ─────────────────────────────────
+prompts:
+  - id: direct
+    raw: "{{question}}"
+
+  - id: context_grounded
+    raw: |
+      Answer the following question using only information from the provided knowledge base.
+      If you don't know the answer, say "I don't have enough information."
+      
+      Question: {{question}}
+
+  - id: analyst_persona
+    raw: |
+      You are an expert AI/ML analyst. Using your knowledge base, provide a clear,
+      structured answer to: {{question}}
+
+# ── Providers: test against local Ollama ─────────────────────────────────────
+providers:
+  - id: ollama:llama3.2
+    config:
+      temperature: 0.1
+
+# ── Test cases ────────────────────────────────────────────────────────────────
+tests:
+  - description: "RAG vs fine-tuning question"
+    vars:
+      question: "What is the difference between RAG and fine-tuning?"
+    assert:
+      - type: contains-any
+        value:
+          - "RAG"
+          - "retrieval"
+          - "fine-tun"
+      - type: llm-rubric
+        value: "The answer correctly distinguishes between RAG (runtime retrieval) and fine-tuning (training-time weight adaptation)"
+
+  - description: "MCP question"
+    vars:
+      question: "What is the Model Context Protocol?"
+    assert:
+      - type: contains-any
+        value:
+          - "MCP"
+          - "protocol"
+          - "Anthropic"
+      - type: llm-rubric
+        value: "The answer explains MCP as a standard for LLMs to discover and call tools"
+
+  - description: "LangFuse observability question"
+    vars:
+      question: "Why would I use LangFuse?"
+    assert:
+      - type: contains-any
+        value:
+          - "LangFuse"
+          - "trace"
+          - "observ"
+      - type: not-contains
+        value: "I don't know"
+
+  - description: "Unknown topic — should express uncertainty"
+    vars:
+      question: "What is the GDP of Mars?"
+    assert:
+      - type: llm-rubric
+        value: "The answer expresses uncertainty or inability to answer rather than fabricating information"
+
+# ── Output configuration ───────────────────────────────────────────────────────
+outputPath: tests/promptfoo_results.json

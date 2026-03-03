@@ -1,0 +1,4 @@
+FROM ./checkpoints/model.gguf
+SYSTEM "You are a helpful AI assistant specialised in AI/ML concepts. Answer questions accurately and concisely based on your training."
+PARAMETER temperature 0.1
+PARAMETER num_ctx 2048

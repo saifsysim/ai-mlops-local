@@ -1,0 +1,33 @@
+stages:
+  ingest:
+    cmd: python src/data/ingest.py
+    deps:
+      - src/data/ingest.py
+    outs:
+      - data/raw/articles.json
+      - data/raw/qa_pairs.json
+
+  preprocess:
+    cmd: python src/data/preprocess.py
+    deps:
+      - src/data/preprocess.py
+      - data/raw/articles.json
+    outs:
+      - data/processed/articles_clean.json
+      - data/processed/qa_pairs_clean.json
+
+  embed:
+    cmd: python src/data/embed.py
+    deps:
+      - src/data/embed.py
+      - data/processed/articles_clean.json
+    outs:
+      - data/embeddings/chroma.sqlite3
+
+  prepare_finetune_dataset:
+    cmd: python src/training/prepare_dataset.py
+    deps:
+      - src/training/prepare_dataset.py
+      - data/processed/qa_pairs_clean.json
+    outs:
+      - data/processed/finetune_dataset.json
